@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {SafeAreaView, StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, ActivityIndicator} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -13,31 +13,17 @@ const App = () => {
 	const [video, setVideo] = useState([]);
 	const [pred, setPred] = useState("");
 	const [frames, setFrames] = useState({});
-  const [faceDetector, setFaceDetector] = useState("");
-	const [loading, setLoading] = useState(false);
-  const [deepFakeDetector, setDeepFakeDetector] = useState("");
-
-  useEffect(() => {
-    async function loadModel() {
-			try {
-				const tfReady = await tf.ready();
-				// const modelJson = await require("./assets/model/model.json");
-				// const modelWeight = await require("./assets/model/group1-shard.bin");
-				// const dfDetector = await tf.loadLayersModel(bundleResourceIO(modelJson,modelWeight));
-					const faceDetector =  await blazeface.load();
-					setFaceDetector(faceDetector);
-			} catch(err) {
-				console.log(err);
-			}
-			// setDeepFakeDetector(maskDetector);
-    }
-    loadModel();
-  }, []); 
+	const [loading, setLoading] = useState(false); 
 
   const getFaces = async() => {
     try {
+			const tfReady = await tf.ready();
 			let tempArray = {};
 			let images = [];
+			const faceDetector = await blazeface.load();
+			const modelJson = require('./assets/model/model.json');
+			const modelWeight = await require('./assets/model/group1.bin');
+			const dfDetector = await tf.loadLayersModel(bundleResourceIO(modelJson, modelWeight));
 			if(video[0].type === "video") {
 				const time = video[0].duration;
 				for(let t = 0 ; t < time ; t = t + 1000) {
@@ -48,30 +34,36 @@ const App = () => {
 			else {
 				images.push(video[0].uri);
 			}
+			let count = 0;
+			let temp = 0.0;
 			for(let ind = 0 ; ind < images.length ; ind++) {
 				const uri = images[ind];
-				const tfReady = await tf.ready();
 				const imgB64 = await FileSystem.readAsStringAsync(uri, {
 					encoding: FileSystem.EncodingType.Base64,
 				});
 				const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
 				const raw = new Uint8Array(imgBuffer);
-				const imageTensor = decodeJpeg(raw).resizeBilinear([128, 128]);
+				const imageTensor = decodeJpeg(raw).resizeBilinear([256, 256]);
 				const faces = await faceDetector.estimateFaces(imageTensor, false);
+				count += faces.length;
 				for (let i = 0 ; i < faces.length ; i++) {
-					// let width = parseInt((faces[i].bottomRight[1] - faces[i].topLeft[1]));
-					// let height = parseInt((faces[i].bottomRight[0] - faces[i].topLeft[0]));
-					// let faceTensor = imageTensor.slice([parseInt(faces[i].topLeft[1]), parseInt(faces[i].topLeft[0]), 0], [width,height, 3]);
-					// faceTensor = faceTensor.resizeBilinear([128, 128]).reshape([1, 128, 128, 3]);
+					let width = parseInt((faces[i].bottomRight[1] - faces[i].topLeft[1]));
+					let height = parseInt((faces[i].bottomRight[0] - faces[i].topLeft[0]));
+					let faceTensor = imageTensor.slice([parseInt(faces[i].topLeft[1]), parseInt(faces[i].topLeft[0]), 0], [width,height, 3]);
+					faceTensor = faceTensor.resizeBilinear([256, 256]).reshape([1, 256, 256, 3]);
+					let result = await dfDetector.predict(faceTensor).data();
+					temp += result[0];
 					if(!tempArray.hasOwnProperty(uri)) {
 						tempArray[uri] = [];
 					}
 					tempArray[uri].push({
 						id: uri + i, 
-						location: faces[i]
+						location: faces[i],
 					});
 				}
 			}
+			setPred(String(temp * 100 / count));
+			tf.disposeVariables();
 			setFrames(tempArray);
 			setLoading(false);
     } catch(err) {
@@ -155,11 +147,11 @@ const App = () => {
 					</View>
 				)}
 				{!loading && Object.keys(frames).length !== 0 && (
-					<View style={{...styles.listContainer, height: '20%'}}>
+					<View style={styles.listContainer}>
 						<ScrollView style={{flexDirection: 'row'}} horizontal={true}>
 							{Object.entries(frames).map(([key, value]) => {
 								return (
-									<View style={{flex: 1}} key={key}>
+									<View style={{flex: 1, alignItems: 'center', justifyContent: 'center', marginHorizontal: 4}} key={key}>
 										<Image
 											key={key}
 											source={{
@@ -167,8 +159,8 @@ const App = () => {
 											}}
 											style={{
 												width: 128,
-												height: 128,
-												resizeMode: 'contain'
+												height: undefined,
+												aspectRatio: 1,
 											}}
 										/>
 										<Svg height={128} width={128} style={{marginTop: -128}}>
@@ -176,10 +168,10 @@ const App = () => {
 												return (
 													<Rect
 														key={face.id}
-														x={face.location.topLeft[0]}
-														y={face.location.topLeft[1]}
-														width={(face.location.bottomRight[0] - face.location.topLeft[0])}
-														height={(face.location.bottomRight[1] - face.location.topLeft[1])}
+														x={face.location.topLeft[0] / 2}
+														y={face.location.topLeft[1] / 2}
+														width={(face.location.bottomRight[0] - face.location.topLeft[0]) / 2}
+														height={(face.location.bottomRight[1] - face.location.topLeft[1]) / 2}
 														stroke='red'
 														strokeWidth={1}
 														fill=""
@@ -193,9 +185,9 @@ const App = () => {
 						</ScrollView>
 					</View>
 				)}
-				{pred !== "" && (
+				{pred !== "" && !loading && (
 					<View style={{}}>
-						<Text style={styles.subHeading}>Video is {pred >= 0.5 ? "Real" : "Fake"}</Text>
+						<Text style={styles.subHeading}>{video[0].type.toUpperCase()} is {parseFloat(pred).toFixed(2)}% Real</Text>
 					</View>
 				)}
 			</LinearGradient>
@@ -245,7 +237,7 @@ const styles = StyleSheet.create({
 	listContainer: {
 		alignItems: 'center',
 		justifyContent: 'space-evenly',
-		height: '30%',
+		height: '25%',
 		width: '95%',
 		margin: '1%',
 	},
