@@ -217,13 +217,13 @@ const App = () => {
 					transparent
 					animationType='slide'>
 					<View style={styles.optionsModalOuterContainer}>
+						<TouchableOpacity
+							style={styles.closeBtn}
+							onPress={closePictureModal}>
+								<Text style={styles.subHeading}>Close</Text>
+						</TouchableOpacity>
 						<View style={styles.optionsModalInnerContainer}>
-							<TouchableOpacity
-								style={styles.closeBtn}
-								onPress={closePictureModal}>
-									<Text style={styles.subHeading}>Close</Text>
-							</TouchableOpacity>
-							<View style={{alignItems: 'center', justifyContent: 'center', backgroundColor: '#bdbbbb'}}>
+							<View style={{alignItems: 'center', justifyContent: 'center', backgroundColor: '#bdbbbb',}}>
 								<Image
 									key={selectedFrame}
 									source={{
@@ -253,6 +253,9 @@ const App = () => {
 									})}
 								</Svg>
 							</View>
+						</View>
+						<View style={{width: '80%',alignItems: 'center',paddingVertical: 5,backgroundColor: '#bdbbbb',borderBottomRightRadius: 50,borderBottomLeftRadius: 50,}}>
+							<Text style={styles.subHeading}> </Text>
 						</View>
 					</View>
 				</Modal>
@@ -334,23 +337,23 @@ const styles = StyleSheet.create({
 	optionsModalOuterContainer: {
     backgroundColor: 'rgba(0,0,0,0.7)',
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+		alignItems: 'center',
   },
 
   optionsModalInnerContainer: {
     backgroundColor: '#bdbbbb',
-    width: '100%',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
+    width: '80%',
     maxHeight: '70%',
   },
 
   closeBtn: {
+		width: '80%',
     alignItems: 'center',
     paddingVertical: 5,
     backgroundColor: '#bdbbbb',
+		borderTopRightRadius: 50,
 		borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
   },
 });
 
