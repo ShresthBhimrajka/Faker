@@ -8,6 +8,7 @@ import * as blazeface from '@tensorflow-models/blazeface';
 import * as FileSystem from 'expo-file-system';
 import Svg, {Rect} from 'react-native-svg';
 import * as VideoThumbnails from 'expo-video-thumbnails';
+import LottieView from 'lottie-react-native';
 
 const App = () => {
 	const [video, setVideo] = useState([]);
@@ -17,6 +18,8 @@ const App = () => {
 	const [facePred, setFacePred] = useState({});
 	const [selectedFrame, setSelectedFrame] = useState(null);
 	const [pictureVisible, setPictureVisible] = useState(false);
+	const stepArray = ['Loading Model...', 'Extracting frames...', 'Extracting faces...'];
+	const [steps, setSteps] = useState(-1);
 
   const getFaces = async() => {
     try {
@@ -24,10 +27,12 @@ const App = () => {
 			let tempArray = {};
 			let images = [];
 			let tempPred = {};
+			setSteps(0);
 			const faceDetector = await blazeface.load();
 			const modelJson = require('./assets/model/model.json');
 			const modelWeight = await require('./assets/model/group1.bin');
 			const dfDetector = await tf.loadLayersModel(bundleResourceIO(modelJson, modelWeight));
+			setSteps(1);
 			if(video[0].type === "video") {
 				const time = video[0].duration;
 				for(let t = 0 ; t < time ; t = t + 1000) {
@@ -40,6 +45,7 @@ const App = () => {
 			}
 			let count = 0;
 			let temp = 0.0;
+			setSteps(2);
 			for(let ind = 0 ; ind < images.length ; ind++) {
 				const uri = images[ind];
 				const imgB64 = await FileSystem.readAsStringAsync(uri, {
@@ -74,6 +80,7 @@ const App = () => {
 			tf.disposeVariables();
 			setFrames(tempArray);
 			setLoading(false);
+			setSteps(-1);
 			setFacePred(tempPred);
     } catch(err) {
        	console.log("Unable to load image", err);
@@ -153,7 +160,26 @@ const App = () => {
 							})}
 						</View>
 						{loading ? (
-							<ActivityIndicator visible={loading} textContent={'Loading...'} textStyle={{color: 'white', fontSize: '20'}}/>
+							<Modal 
+								visible={loading}
+								transparent
+								animationType='fade'>
+								<View style={styles.optionsModalOuterContainer}>
+									<View style={{...styles.optionsModalInnerContainer,alignItems: 'center', justifyContent: 'center', borderTopLeftRadius: 25, borderTopRightRadius: 25, borderBottomLeftRadius: 25, borderBottomRightRadius: 25}}>
+										<LottieView
+											autoPlay
+											style={{
+												width: 256,
+												height: undefined,
+												aspectRatio: 1,
+												backgroundColor: '#bdbbbb',
+											}}
+											source={require('./assets/16432-scan-face.json')}
+										/>
+										<Text style={styles.subHeading}>{stepArray[steps]}</Text>
+									</View>
+								</View>
+							</Modal>
 						) : (
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity style={{...styles.openButton, width: '40%'}} onPress={runTest}>
