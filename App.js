@@ -172,7 +172,7 @@ const App = () => {
 												width: 256,
 												height: undefined,
 												aspectRatio: 1,
-												backgroundColor: '#bdbbbb',
+												backgroundColor: 'rgba(54, 54, 128, 1)',
 											}}
 											source={require('./assets/16432-scan-face.json')}
 										/>
@@ -249,7 +249,7 @@ const App = () => {
 								<Text style={styles.subHeading}>Close</Text>
 						</TouchableOpacity>
 						<View style={styles.optionsModalInnerContainer}>
-							<View style={{alignItems: 'center', justifyContent: 'center', backgroundColor: '#bdbbbb',}}>
+							<View style={{alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(54, 54, 128, 1)',}}>
 								<Image
 									key={selectedFrame}
 									source={{
@@ -280,7 +280,7 @@ const App = () => {
 								</Svg>
 							</View>
 						</View>
-						<View style={{width: '80%',alignItems: 'center',paddingVertical: 5,backgroundColor: '#bdbbbb',borderBottomRightRadius: 50,borderBottomLeftRadius: 50,}}>
+						<View style={{width: '80%',alignItems: 'center',paddingVertical: 5,backgroundColor: 'rgba(54, 54, 128, 1)',borderBottomRightRadius: 50,borderBottomLeftRadius: 50,}}>
 							<Text style={styles.subHeading}> </Text>
 						</View>
 					</View>
@@ -368,16 +368,17 @@ const styles = StyleSheet.create({
   },
 
   optionsModalInnerContainer: {
-    backgroundColor: '#bdbbbb',
+    backgroundColor: 'rgba(54, 54, 128, 1)',
     width: '80%',
     maxHeight: '70%',
+		padding: 10
   },
 
   closeBtn: {
 		width: '80%',
     alignItems: 'center',
     paddingVertical: 5,
-    backgroundColor: '#bdbbbb',
+    backgroundColor: 'rgba(54, 54, 128, 1)',
 		borderTopRightRadius: 50,
 		borderTopLeftRadius: 50,
   },
