@@ -24,7 +24,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/ai_brain.png",
         "backgroundColor": "#000000"
-      }
+      },
+      "permissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -9,6 +9,8 @@ import * as FileSystem from 'expo-file-system';
 import Svg, {Rect} from 'react-native-svg';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import LottieView from 'lottie-react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as MediaLibrary from 'expo-media-library';
 
 const App = () => {
 	const [video, setVideo] = useState([]);
@@ -29,32 +31,55 @@ const App = () => {
 			let tempPred = {};
 			setSteps(0);
 			const faceDetector = await blazeface.load();
+            console.log("face detector loaded");
 			const modelJson = require('./assets/model/model.json');
 			const modelWeight = await require('./assets/model/group1.bin');
 			const dfDetector = await tf.loadLayersModel(bundleResourceIO(modelJson, modelWeight));
+            console.log("df detector loaded");
 			setSteps(1);
 			if(video[0].type === "video") {
 				const time = video[0].duration;
+                let {status} = await MediaLibrary.requestPermissionsAsync();
+                const options = {
+                    sortBy: [MediaLibrary.SortBy.creationTime],
+                    mediaType: [MediaLibrary.MediaType.video],
+                };
+                let { assets } = await MediaLibrary.getAssetsAsync(options);
+                const newVideoUri = assets.find((x) => x.id === video[0].assetId)?.uri;
 				for(let t = 0 ; t < time ; t = t + 1000) {
-					const {uri} = await VideoThumbnails.getThumbnailAsync(video[0].uri, {time: t});
+					const {uri} = await VideoThumbnails.getThumbnailAsync(newVideoUri, {time: t});
 					images.push(uri);
 				}
 			}
 			else {
 				images.push(video[0].uri);
 			}
+            console.log("images extracted");
 			let count = 0;
 			let temp = 0.0;
 			setSteps(2);
 			for(let ind = 0 ; ind < images.length ; ind++) {
-				const uri = images[ind];
-				const imgB64 = await FileSystem.readAsStringAsync(uri, {
-					encoding: FileSystem.EncodingType.Base64,
-				});
+                let uri = images[ind];
+                const fileInfo = await FileSystem.getInfoAsync(uri);
+                console.log(fileInfo)
+				// const imgB64 = await FileSystem.readAsStringAsync(uri, {
+				// 	encoding: FileSystem.EncodingType.Base64,
+				// });
+                const manipResult = await ImageManipulator.manipulateAsync(
+                    uri,
+                    [],
+                    {base64: true, compress: 1, format: ImageManipulator.SaveFormat.JPEG },
+                  );
+                const imgB64 = manipResult.base64;
+                console.log(1);
 				const imgBuffer = tf.util.encodeString(imgB64, 'base64').buffer;
+                console.log(2);
 				const raw = new Uint8Array(imgBuffer);
+                console.log(3);
 				const imageTensor = decodeJpeg(raw).resizeBilinear([256, 256]);
+                console.log(4);
 				const faces = await faceDetector.estimateFaces(imageTensor, false);
+                console.log("faces extracted");
 				count += faces.length;
 				for (let i = 0 ; i < faces.length ; i++) {
 					let width = parseInt((faces[i].bottomRight[1] - faces[i].topLeft[1]));
@@ -74,6 +99,7 @@ const App = () => {
 					tempPred[id] = result[0];
 				}
 			}
+            console.log(count)
 			if(count > 0) {
 				setPred(String(temp * 100 / count));
 			}
